@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rosanna Archive: The Deep Ocean</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <style>
+        /* --- 1. 디자인 시스템 --- */
+        :root {
+            --bg-color: #Fdfcf8;
+            --primary-navy: #1B263B;
+            --accent-sky: #778DA9;
+            --highlight-gold: #C5A059;
+            --text-color: #2c3e50;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Pretendard', serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            transition: all 0.3s; 
+        }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 2px; }
+
+        /* --- 2. 사이드바 (70px) --- */
+        .sidebar {
+            width: 70px;
+            background: var(--primary-navy);
+            display: flex; flex-direction: column; align-items: center;
+            padding-top: 30px; gap: 15px; z-index: 1000;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.2); flex-shrink: 0;
+            transition: 0.3s;
+        }
+
+        .logo-area {
+            font-size: 9px; color: var(--highlight-gold); margin-bottom: 10px;
+            text-align: center; font-weight: bold; letter-spacing: 1px; cursor: pointer;
+        }
+
+        .nav-btn {
+            width: 55px; padding: 8px 0; margin-bottom: 5px;
+            color: #778DA9; text-align: center; font-size: 9px; cursor: pointer;
+            border-radius: 6px; transition: 0.3s;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .nav-btn.active { color: var(--highlight-gold); background: rgba(197, 160, 89, 0.1); font-weight: bold; }
+
+        .divider { width: 50%; height: 1px; background: rgba(255,255,255,0.2); margin: 10px 0; }
+
+        .hex-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; width: 100%; align-items: center; padding-bottom: 20px; }
+        .hex-btn {
+            width: 42px; height: 42px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: #2a3b55; cursor: pointer; transition: all 0.3s; flex-shrink: 0;
+        }
+        .hex-btn img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; transition: 0.3s; }
+        .hex-btn.active { background: var(--highlight-gold); transform: scale(1.1); }
+        .hex-btn.active img { opacity: 1; }
+
+        /* --- 3. 콘텐츠 영역 --- */
+        .content-area { flex: 1; position: relative; overflow: hidden; display: flex; }
+        .section-view { display: none !important; width: 100%; height: 100%; position: absolute; top: 0; left: 0; background: var(--bg-color); }
+        
+        #view-character.section-view.active { display: flex !important; }
+        #view-gallery.section-view.active { display: block !important; }
+        #view-items.section-view.active { display: block !important; }
+        #view-portraits.section-view.active { display: block !important; }
+
+        #view-character {
+            background: radial-gradient(circle at 50% 40%, #ffffff 0%, #dbe4f0 100%);
+            justify-content: center; align-items: center;
+        }
+
+        .bg-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 15rem; font-weight: 900; color: rgba(27, 38, 59, 0.03); pointer-events: none;
+        }
+
+        .main-char {
+            height: 95vh; max-width: 65%; object-fit: contain;
+            filter: drop-shadow(10px 10px 20px rgba(0,0,0,0.2)); 
+            z-index: 5; transition: opacity 0.3s; 
+        }
+
+        .bottom-controls {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 200; display: flex; flex-direction: column; align-items: center; gap: 15px;
+            width: 100%; max-width: 600px;
+        }
+
+        .mobile-side-btn {
+            display: none; width: 50px; height: 50px; border-radius: 50%;
+            background: var(--primary-navy); color: white;
+            justify-content: center; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 2px solid var(--highlight-gold);
+            cursor: pointer; font-size: 1.5rem; transition: 0.2s;
+        }
+
+        .evolution-row { display: flex; gap: 10px; }
+        .tilt-btn {
+            width: 50px; height: 80px; background: #fff;
+            transform: skewX(-10deg); overflow: hidden; border: 2px solid #ccc;
+            cursor: pointer; transition: 0.3s;
+        }
+        .tilt-btn img {
+            width: 100%; height: 100%; object-fit: cover;
+            transform: skewX(10deg) scale(1.3); filter: grayscale(100%); opacity: 0.7; transition: 0.3s;
+        }
+        .tilt-btn.active { border-color: var(--highlight-gold); }
+        .tilt-btn.active img { filter: grayscale(0%); opacity: 1; }
+
+        .combat-panel {
+            position: absolute; top: 20px; right: 0; width: 180px;
+            background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(8px);
+            border-radius: 12px 0 0 12px; padding: 15px; z-index: 500;
+            border: 1px solid rgba(255,255,255,0.8); border-right: none; 
+            box-shadow: -5px 5px 15px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .combat-section h3 { margin: 0 0 8px 0; font-size: 11px; color: var(--primary-navy); border-bottom: 1px solid #ddd; padding-bottom: 4px; text-transform: uppercase;}
+        .icon-row { display: flex; gap: 8px; justify-content: flex-start; }
+        
+        .skill-icon, .weapon-icon {
+            width: 36px; height: 36px;
+            background: #2a3b55; border-radius: 6px;
+            display: flex; justify-content: center; align-items: center;
+            border: 1px solid transparent; transition: 0.3s;
+        }
+        .skill-icon img, .weapon-icon img { width: 85%; height: 85%; object-fit: contain; }
+
+        /* [VIEWS] */
+        #view-gallery, #view-items, #view-portraits { padding: 30px; overflow-y: auto; box-sizing: border-box; }
+        .section-title { color: var(--primary-navy); border-bottom: 2px solid var(--highlight-gold); padding-bottom: 10px; margin-bottom: 20px; font-size: 1.5rem; }
+        .gallery-grid { column-count: 4; column-gap: 15px; }
+        .gallery-item { break-inside: avoid; margin-bottom: 15px; border-radius: 10px; overflow: hidden; background: white; cursor: pointer; transition: 0.3s; display: inline-block; width: 100%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .gallery-item img { width: 100%; height: auto; display: block; }
+        .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
+        .item-card { background: white; border: 1px solid #eee; border-radius: 12px; padding: 15px; display: flex; justify-content: center; align-items: center; transition: 0.3s; aspect-ratio: 1/1; }
+        .item-card img { width: 90%; height: 90%; object-fit: contain; }
+        .portrait-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .portrait-item { width: 80px; height: 80px; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); background: #2a3b55; cursor: pointer; transition: 0.3s; }
+        .portrait-item img { width: 100%; height: 100%; object-fit: cover; }
+
+        .voice-panel { width: 150px; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; z-index: 500; box-shadow: -5px 0 15px rgba(0,0,0,0.05); }
+        .voice-header { padding: 15px; background: var(--primary-navy); color: white; text-align: center; }
+        .voice-list { flex: 1; overflow-y: auto; padding: 5px; }
+        .voice-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; margin-bottom: 5px; background: #f8f9fa; border: 1px solid #eee; border-radius: 4px; cursor: pointer; font-size: 0.7rem; }
+        .voice-item.playing { background: var(--primary-navy); color: white; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
+        .modal-overlay.open { display: flex; opacity: 1; }
+        .modal-content { max-width: 90%; max-height: 90%; border-radius: 8px; }
+        .modal-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
+
+        .mobile-popup-container { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(20px); width: 90%; max-width: 380px; max-height: 50vh; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 20px; z-index: 50; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: 0.4s; }
+        .mobile-popup-container.active { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+        /* 📱 모바일 대응 (정렬 수정 🚀) */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { 
+                width: 100%; min-height: 110px; padding: 10px 0; 
+                order: 1; align-items: center; justify-content: center;
+            }
+            .sidebar > div:not(.hex-list):not(.divider) { display: flex; gap: 10px; justify-content: center; }
+            .hex-list { 
+                flex-direction: row; width: 100%; overflow-x: auto; padding: 10px; 
+                justify-content: center; /* [수정] 육각 초상화 가운데 정렬 🚀 */
+            }
+            .content-area { order: 2; height: calc(100vh - 110px); }
+            .main-char { position: relative; transform: translateY(-20px); height: 70%; max-width: 95%; }
+            .combat-panel, .voice-panel { display: none !important; }
+            .bottom-controls { 
+                bottom: 20px; width: 100%; flex-direction: row; 
+                justify-content: space-between; padding: 0 20px; box-sizing: border-box; 
+            }
+            #btn-mobile-combat { display: flex; order: 1; }
+            .evolution-row { order: 2; }
+            #btn-mobile-voice { display: flex; order: 3; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo-area" onclick="switchTab('character')">ROSANNA<br>DB</div>
+        <div>
+            <div class="nav-btn active" id="btn-character" onclick="switchTab('character')">VIEWER</div>
+            <div class="nav-btn" id="btn-gallery" onclick="switchTab('gallery')">GALLERY</div>
+            <div class="nav-btn" id="btn-items" onclick="switchTab('items')">ITEMS</div>
+            <div class="nav-btn" id="btn-portraits" onclick="switchTab('portraits')">ICONS</div>
+        </div>
+        <div class="divider"></div>
+        <div class="hex-list" id="sidebar-hex-list"></div>
+    </div>
+
+    <div class="content-area">
+        <div id="view-character" class="section-view active">
+            <div class="bg-text" id="bgText">WATER</div>
+            <img src="" class="main-char" id="mainImage" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'">
+            <div class="combat-panel" id="desktopCombatPanel"></div>
+            <div class="bottom-controls">
+                <div class="mobile-side-btn" id="btn-mobile-combat" onclick="toggleMobilePopup('combat')">⚔️</div>
+                <div class="evolution-row" id="evolutionRow"></div>
+                <div class="mobile-side-btn" id="btn-mobile-voice" onclick="toggleMobilePopup('voice')">🔊</div>
+            </div>
+        </div>
+        <div id="view-gallery" class="section-view">
+            <h2 class="section-title">✨ Gallery & Costumes</h2>
+            <div class="gallery-grid" id="galleryGrid"></div>
+        </div>
+        <div id="view-items" class="section-view">
+            <h2 class="section-title">💎 Items</h2>
+            <div class="item-grid" id="itemGrid"></div>
+        </div>
+        <div id="view-portraits" class="section-view">
+            <h2 class="section-title">💠 Portraits Collection</h2>
+            <div class="portrait-grid" id="portraitGrid"></div>
+        </div>
+    </div>
+
+    <div class="voice-panel" id="desktopVoicePanel">
+        <div class="voice-header"><h3>Voice <span id="voiceCount">(0)</span></h3></div>
+        <div class="voice-list" id="voiceList"></div>
+    </div>
+
+    <audio id="audioPlayer"></audio>
+    <div class="modal-overlay" id="imageModal" onclick="closeModal('imageModal')">
+        <span class="modal-close">&times;</span>
+        <img class="modal-content" id="modalImg" src="">
+    </div>
+    <div class="mobile-popup-container" id="mobilePopup">
+        <div id="mobilePopupContent"></div>
+    </div>
+
+    <script src="data.js"></script>
+
+    <script>
+// ---------------------------------------------------------
+// 1. 필수 변수 선언
+// ---------------------------------------------------------
+const portraitList = [
+    "RosannaD1_icon.png", "RosannaD2_icon.png", "RosannaD3_icon.png",
+    "RosannaE1_icon.png", "RosannaE2_icon.png", "RosannaE3_icon.png",
+    "RosannaF1_icon.png", "RosannaF2_icon.png", "RosannaF3_icon.png",
+    "RosannaL1_icon.png", "RosannaL2_icon.png", "RosannaL3_icon.png",
+    "RosannaW1_icon.png", "RosannaW2_icon.png", "RosannaW3_icon.png",
+    "RosannaHolidaywear2022RareW_icon.png", "RosannaHolidaywear2022W_icon.png",
+    "RosannaSummerwear2021RareW_icon.png", "RosannaSummerwear2021W_icon.png",
+    "RosannaSummerwear2022RareW_icon.png", "RosannaSummerwear2022W_icon.png",
+    "YoungRosannaW2_icon.png"
+];
+
+const elementOrder = ['W', 'D', 'L', 'F', 'E'];
+let currentState = { element: 'W', mode: 'evolution', index: 2 };
+let activeMobilePopup = null;
+const audioPlayer = document.getElementById('audioPlayer');
+
+// ---------------------------------------------------------
+// 2. 구글 드라이브 URL 변환기 (CORB 우회 버전)
+// ---------------------------------------------------------
+function getDriveUrl(fileName, type = 'image') {
+    if (typeof driveImageMap === 'undefined' || typeof driveVoiceMap === 'undefined') return null;
+    
+    const id = (type === 'image') ? driveImageMap[fileName] : driveVoiceMap[fileName];
+    if (!id) return null;
+
+    if (type === 'image') {
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w2000`;
+    } else {
+        return `https://docs.google.com/uc?export=open&id=${id}`;
+    }
+}
+
+// ---------------------------------------------------------
+// 3. 이미지 미리 로딩 (속도 최적화 🚀)
+// ---------------------------------------------------------
+function preloadMainImages() {
+    elementOrder.forEach(key => {
+        const imgName = `Rosanna${key}3_illust.png`;
+        const url = getDriveUrl(imgName, 'image');
+        if(url) {
+            const img = new Image();
+            img.src = url;
+        }
+    });
+}
+
+// ---------------------------------------------------------
+// 4. 초기화 및 기능 함수
+// ---------------------------------------------------------
+function init() {
+    if (typeof charConfig === 'undefined' || typeof rosannaVoiceFiles === 'undefined') {
+        alert('오류: data.js 파일을 확인해주세요.');
+        return;
+    }
+    renderSidebarHex();
+    renderGallery(); 
+    renderItems();
+    renderPortraits(); 
+    updateCharacterView();
+    preloadMainImages(); // 속도 최적화 실행
+}
+
+window.switchTab = function(tabName) {
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`btn-${tabName}`).classList.add('active');
+    document.querySelectorAll('.section-view').forEach(view => view.classList.remove('active'));
+    document.getElementById(`view-${tabName}`).classList.add('active');
+    
+    const voicePanel = document.getElementById('desktopVoicePanel');
+    if(voicePanel) voicePanel.style.display = (tabName === 'character') ? 'flex' : 'none';
+    closeMobilePopup();
+}
+
+function renderSidebarHex() {
+    const list = document.getElementById('sidebar-hex-list');
+    list.innerHTML = '';
+    elementOrder.forEach(key => {
+        const elData = charConfig.elements[key];
+        if(!elData) return;
+        const btn = document.createElement('div');
+        btn.className = `hex-btn ${key === currentState.element ? 'active' : ''}`;
+        const driveUrl = getDriveUrl(elData.icon, 'image');
+        btn.innerHTML = `<img src="${driveUrl || ''}" onerror="this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'">`;
+        btn.onclick = () => {
+            currentState.element = key;
+            currentState.index = 2; 
+            renderSidebarHex();
+            updateCharacterView();
+        };
+        list.appendChild(btn);
+    });
+}
+
+function updateCharacterView() {
+    const elKey = currentState.element;
+    const elInfo = charConfig.elements[elKey];
+    const currentData = charConfig.evolution[elKey][currentState.index];
+    const mainImg = document.getElementById('mainImage');
+    
+    const imgFileName = `Rosanna${currentData.s}_illust.png`;
+    const driveUrl = getDriveUrl(imgFileName, 'image');
+
+    mainImg.style.opacity = 0;
+    setTimeout(() => { 
+        if(driveUrl) mainImg.src = driveUrl; 
+        mainImg.style.opacity = 1; 
+    }, 150);
+
+    document.getElementById('bgText').innerText = elInfo.name.toUpperCase();
+    renderControls(elKey);
+    renderCombatInfo(elKey, elInfo.full); 
+    renderVoiceList();
+}
+
+function renderControls(elKey) {
+    const evoRow = document.getElementById('evolutionRow');
+    evoRow.innerHTML = '';
+    const evos = charConfig.evolution[elKey];
+    if (evos) {
+        evos.forEach((item, idx) => {
+            const btn = document.createElement('div');
+            const isActive = (currentState.index === idx);
+            btn.className = `tilt-btn ${isActive ? 'active' : ''}`;
+            const tiltFileName = `Rosanna${item.s}_portrait_tilt.png`;
+            const driveUrl = getDriveUrl(tiltFileName, 'image') || getDriveUrl(`Rosanna${item.s}_icon.png`, 'image');
+            btn.innerHTML = `<img src="${driveUrl}">`;
+            btn.onclick = () => { currentState.index = idx; updateCharacterView(); };
+            evoRow.appendChild(btn);
+        });
+    }
+}
+
+function getCombatHtml(elKey, elFullName) {
+    const skills = [1, 2, 3].map(i => `icon_rosanna.${elFullName}.skill${i}.png`);
+    const weapons = [
+        `WeaponIcon_RosannaWeaponBasic${elKey}.png`,
+        `WeaponIcon_RosannaWeaponDesperado${elKey}.png`,
+        `WeaponIcon_RosannaWeaponElegant${elKey}.png`
+    ];
+    return `
+        <div class="combat-section">
+            <h3>Skills</h3>
+            <div class="icon-row">${skills.map(s => `<div class="skill-icon"><img src="${getDriveUrl(s, 'image')}"></div>`).join('')}</div>
+        </div>
+        <div class="combat-section">
+            <h3>Weapons</h3>
+            <div class="icon-row">${weapons.map(w => `<div class="weapon-icon"><img src="${getDriveUrl(w, 'image')}"></div>`).join('')}</div>
+        </div>`;
+}
+
+function renderCombatInfo(elKey, elFullName) {
+    document.getElementById('desktopCombatPanel').innerHTML = getCombatHtml(elKey, elFullName);
+}
+
+function renderGallery() {
+    const grid = document.getElementById('galleryGrid');
+    grid.innerHTML = ''; 
+    
+    // 코스튬 처리 (빈 칸 방지 🚀)
+    Object.keys(charConfig.costumes).forEach(key => {
+        charConfig.costumes[key].forEach(cost => {
+            if (cost.isSpecial) return; 
+            const imgFileName = `Rosanna${cost.s}_illust.png`;
+            const driveUrl = getDriveUrl(imgFileName, 'image');
+            if (driveUrl) {
+                const card = document.createElement('div');
+                card.className = 'gallery-item';
+                card.innerHTML = `<img src="${driveUrl}" loading="lazy">`;
+                card.onclick = () => openImageModal(driveUrl);
+                grid.appendChild(card);
+            }
+        });
+    });
+
+    // 갤러리 리스트 처리
+    galleryList.forEach(file => {
+        const driveUrl = getDriveUrl(file, 'image');
+        if (driveUrl) {
+            const card = document.createElement('div');
+            card.className = 'gallery-item';
+            card.innerHTML = `<img src="${driveUrl}" loading="lazy">`;
+            card.onclick = () => openImageModal(driveUrl);
+            grid.appendChild(card);
+        }
+    });
+}
+
+function renderItems() {
+    const grid = document.getElementById('itemGrid');
+    grid.innerHTML = '';
+    itemList.forEach(file => {
+        const driveUrl = getDriveUrl(file, 'image');
+        if(driveUrl) {
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.innerHTML = `<img src="${driveUrl}" loading="lazy">`;
+            grid.appendChild(card);
+        }
+    });
+}
+
+function renderPortraits() {
+    const grid = document.getElementById('portraitGrid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    portraitList.forEach(file => {
+        const driveUrl = getDriveUrl(file, 'image');
+        if(driveUrl) {
+            const item = document.createElement('div');
+            item.className = 'portrait-item';
+            item.innerHTML = `<img src="${driveUrl}" loading="lazy">`;
+            item.onclick = () => openImageModal(driveUrl);
+            grid.appendChild(item);
+        }
+    });
+}
+
+function renderVoiceList() {
+    const elKey = currentState.element; 
+    const targetKey = `Rosanna_${elKey}_`;
+    const filtered = rosannaVoiceFiles.filter(f => f.includes(targetKey));
+    const listHtml = filtered.length ? filtered.map(file => {
+        let cleanName = file.replace(targetKey + 'voice_kr_', '').replace('.wav', '');
+        return `<div class="voice-item" onclick="playVoice('${file}', this)">
+            <div class="voice-info"><span class="voice-name">${cleanName}</span></div>
+            <div class="play-icon">▶</div>
+        </div>`;
+    }).join('') : '<div style="padding:10px; opacity:0.5; font-size:0.7rem;">No Data</div>';
+    document.getElementById('voiceCount').innerText = `(${filtered.length})`;
+    document.getElementById('voiceList').innerHTML = listHtml;
+}
+
+function playVoice(fileName, itemElement) {
+    document.querySelectorAll('.play-icon').forEach(el => el.innerText = '▶');
+    document.querySelectorAll('.voice-item').forEach(el => el.classList.remove('playing'));
+    const driveUrl = getDriveUrl(fileName, 'voice');
+    audioPlayer.src = driveUrl;
+    audioPlayer.play().catch(e => console.error("보이스 재생 실패:", e));
+    itemElement.classList.add('playing');
+    itemElement.querySelector('.play-icon').innerText = '⏸';
+    audioPlayer.onended = () => {
+        itemElement.classList.remove('playing');
+        itemElement.querySelector('.play-icon').innerText = '▶';
+    };
+}
+
+function openImageModal(src) {
+    const modal = document.getElementById('imageModal');
+    document.getElementById('modalImg').src = src;
+    modal.classList.add('open');
+}
+
+function toggleMobilePopup(type) {
+    const popup = document.getElementById('mobilePopup');
+    if (activeMobilePopup === type) { closeMobilePopup(); return; }
+    activeMobilePopup = type;
+    popup.classList.add('active');
+    document.getElementById('btn-mobile-combat').classList.toggle('active', type === 'combat');
+    document.getElementById('btn-mobile-voice').classList.toggle('active', type === 'voice');
+    refreshMobilePopupContent();
+}
+
+function refreshMobilePopupContent() {
+    if (!activeMobilePopup) return;
+    const content = document.getElementById('mobilePopupContent');
+    if (activeMobilePopup === 'combat') {
+        const elInfo = charConfig.elements[currentState.element];
+        content.innerHTML = `<h3>COMBAT INFO</h3>` + getCombatHtml(currentState.element, elInfo.full);
+    } else {
+        const voiceHtml = document.getElementById('voiceList').innerHTML;
+        content.innerHTML = `<h3>VOICE DATA</h3><div style="max-height:40vh; overflow-y:auto;">${voiceHtml}</div>`;
+    }
+}
+
+function closeMobilePopup() {
+    document.getElementById('mobilePopup').classList.remove('active');
+    document.getElementById('btn-mobile-combat').classList.remove('active');
+    document.getElementById('btn-mobile-voice').classList.remove('active');
+    activeMobilePopup = null;
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// 🚀 실행!
+init();
+    </script>
+</body>
+</html>
